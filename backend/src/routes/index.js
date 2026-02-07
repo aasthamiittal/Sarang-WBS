@@ -1,0 +1,35 @@
+const express = require('express');
+const router = express.Router();
+const authRoutes = require('./authRoutes');
+const userRoutes = require('./userRoutes');
+const roleRoutes = require('./roleRoutes');
+const activityLogRoutes = require('./activityLogRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
+const productRoutes = require('./productRoutes');
+const inventoryRoutes = require('./inventoryRoutes');
+const orderRoutes = require('./orderRoutes');
+const warehouseRoutes = require('./warehouseRoutes');
+const returnRoutes = require('./returnRoutes');
+const purchaseRoutes = require('./purchaseRoutes');
+const shippingRoutes = require('./shippingRoutes');
+const supplierRoutes = require('./supplierRoutes');
+const reportRoutes = require('./reportRoutes');
+const integrationRoutes = require('./integrationRoutes');
+
+router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
+router.use('/roles', roleRoutes);
+router.use('/activity-logs', activityLogRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/products', productRoutes);
+router.use('/inventory', inventoryRoutes);
+router.use('/orders', orderRoutes);
+router.use('/warehouses', warehouseRoutes);
+router.use('/returns', returnRoutes);
+router.use('/purchases', purchaseRoutes);
+router.use('/shipping', shippingRoutes);
+router.use('/suppliers', supplierRoutes);
+router.use('/reports', reportRoutes);
+router.use('/integrations', integrationRoutes);
+
+module.exports = router;
