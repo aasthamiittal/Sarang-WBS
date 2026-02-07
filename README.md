@@ -1,97 +1,35 @@
-# WBS-Sarang – Warehouse Backend System
+# WBS-Sarang
 
-Full-stack Warehouse Management System: **React (Strict Mode)** frontend and **Node.js + Express + MongoDB** backend. Database name: **WBS-Sarang**.
+**Warehouse Backend System** — a full-stack warehouse management application built with React and Node.js. The system uses MongoDB (database name: **WBS-Sarang**) and provides inventory, orders, warehouse operations, returns, purchasing, shipping, and reporting.
 
-## Tech Stack
+## Overview
 
-- **Frontend:** React 18 (StrictMode), React Router, Axios, Material UI, Context API
-- **Backend:** Node.js, Express, MongoDB (Mongoose), JWT auth
-- **Theme:** Primary `#6BAED6`, Secondary `#FFFFFF`
+- **Frontend:** React 18 (Strict Mode), React Router, Material UI, Context API. Theme: primary `#6BAED6`, secondary `#FFFFFF`.
+- **Backend:** Node.js, Express, Mongoose, JWT-based authentication.
+- **Database:** MongoDB; collections include users, roles, products, inventory, stock_movements, orders, warehouses, bins, returns, purchases, suppliers, shipments, integrations, and activity_logs.
 
-## Quick Start
+## Getting Started
 
-### 1. Backend
+MongoDB must be running. Copy `backend/.env.example` to `backend/.env` and adjust `MONGODB_URI` and `JWT_SECRET` if needed. Install dependencies and run the backend and frontend (e.g. from the `backend` and `frontend` directories). Run the seed script once to create the initial admin user. The frontend runs on port 3000 and proxies API requests to the backend (port 5000).
 
-```bash
-cd backend
-npm install
-cp .env.example .env   # edit if needed (default: MongoDB localhost, port 5000)
-npm run dev
-```
+## Architecture
 
-Seed initial admin user (run once, when DB is empty):
+- **API:** REST-style; create/read/update/delete follow `add-*`, `get-*`, `update-*`, `delete-*` naming. Protected routes use `Authorization: Bearer <token>`.
+- **Frontend:** Reusable layout (Sidebar, Topbar, MainLayout) and shared components (DataTable, Pagination, FormModal, ConfirmDialog, PageHeader).
 
-```bash
-node src/seed.js
-```
+## Modules
 
-Login: **admin@wbs-sarang.com** / **admin123**
+| Area | Capabilities |
+|------|--------------|
+| **Dashboard** | Daily summary, stock snapshot, low-stock alerts |
+| **Inventory** | Product/SKU master, stock inward, current stock, movements, adjustment, low-stock alerts |
+| **Orders** | Order list, status updates, backorders, cancelled orders |
+| **Warehouse** | Picking, packing, dispatch, bin/location management, stock transfer, warehouse master |
+| **Returns** | Customer returns, RTO tracking |
+| **Purchase & Planning** | Purchase orders, suppliers, demand forecast, reorder levels |
+| **Shipping** | Shipment tracking, delivery status |
+| **Reports** | Inventory, order/dispatch, returns & RTO |
+| **Integrations** | Integration configuration (e.g. Amazon, ecommerce, courier, API) |
+| **Users & Settings** | User management, roles & permissions, activity logs |
 
-### 2. Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open http://localhost:3000. The app proxies `/api` to the backend (port 5000).
-
-### 3. MongoDB
-
-Ensure MongoDB is running locally, or set `MONGODB_URI` in `backend/.env` to your connection string. Database name must be **WBS-Sarang** (or set in `MONGODB_URI`).
-
-## API Naming Convention
-
-- Create: `POST /api/*/add-*`
-- Read: `GET /api/*/get-*` or `GET /api/*/get-*/:id`
-- Update: `PUT /api/*/update-*/:id`
-- Delete: `DELETE /api/*/delete-*/:id`
-
-All protected routes expect header: `Authorization: Bearer <token>` (from login).
-
-## Project Structure
-
-```
-WMS-Sarang/
-├── backend/
-│   ├── src/
-│   │   ├── config/       # DB connection
-│   │   ├── middleware/   # auth, errorHandler
-│   │   ├── models/       # Mongoose schemas
-│   │   ├── controllers/
-│   │   ├── routes/
-│   │   └── server.js
-│   ├── .env
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── api/          # axios instance
-│   │   ├── components/   # layout + common (Table, Pagination, FormModal, ConfirmDialog)
-│   │   ├── context/      # AuthContext
-│   │   ├── pages/        # module pages
-│   │   ├── theme.js
-│   │   └── App.jsx
-│   └── package.json
-└── README.md
-```
-
-## Modules (UI + API)
-
-- **Dashboard** – Daily summary, stock snapshot, alerts
-- **Inventory** – Products, stock inward, current stock, movements, adjustment, low stock
-- **Orders** – List, status, backorders, cancelled
-- **Warehouse** – Picking, packing, dispatch, bins, stock transfer, warehouses
-- **Returns** – Customer returns, RTO tracking
-- **Purchase & Planning** – Purchase orders, suppliers, forecast, reorder levels
-- **Shipping** – Tracking, delivery status
-- **Reports** – Inventory, order/dispatch, returns
-- **Integrations** – List and manage integrations
-- **Users & Settings** – Users, roles, activity logs
-
-## Reusable Components
-
-- `Sidebar`, `Topbar`, `MainLayout`
-- `DataTable`, `Pagination`, `FormModal`, `ConfirmDialog`, `PageHeader`
-
-Code is structured for readability and scalability; ready for enhancements (e.g. Amazon integration).
+The codebase is structured for maintainability and extension (e.g. additional integrations).
