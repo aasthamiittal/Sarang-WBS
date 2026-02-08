@@ -11,9 +11,14 @@ const globalScrollbarStyles = {
   body: { overflowX: 'hidden' },
 };
 
+const routerFutureFlags = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+};
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter future={routerFutureFlags}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <GlobalStyles styles={globalScrollbarStyles} />

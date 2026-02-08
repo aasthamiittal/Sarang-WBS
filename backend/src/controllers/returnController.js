@@ -2,7 +2,8 @@ const Return = require('../models/Return');
 
 exports.addReturn = async (req, res, next) => {
   try {
-    const ret = await Return.create(req.body);
+    const body = { ...req.body, customerId: req.tenantId };
+    const ret = await Return.create(body);
     res.status(201).json({ success: true, data: ret });
   } catch (err) {
     next(err);
@@ -11,7 +12,7 @@ exports.addReturn = async (req, res, next) => {
 
 exports.getReturns = async (req, res, next) => {
   try {
-    const returns = await Return.find().populate('order').populate('items.product', 'sku name').sort({ createdAt: -1 }).lean();
+    const returns = await Return.find({ customerId: req.tenantId }).populate('order').populate('items.product', 'sku name').sort({ createdAt: -1 }).lean();
     res.json({ success: true, data: returns });
   } catch (err) {
     next(err);
@@ -21,7 +22,7 @@ exports.getReturns = async (req, res, next) => {
 exports.addQualityCheck = async (req, res, next) => {
   try {
     const { returnId, itemIndex, qualityStatus } = req.body;
-    const ret = await Return.findById(returnId);
+    const ret = await Return.findOne({ _id: returnId, customerId: req.tenantId });
     if (!ret) return res.status(404).json({ success: false, message: 'Return not found.' });
     if (ret.items[itemIndex]) ret.items[itemIndex].qualityStatus = qualityStatus;
     await ret.save();
@@ -37,7 +38,11 @@ exports.addQualityCheck = async (req, res, next) => {
 
 exports.restockItem = async (req, res, next) => {
   try {
-    const ret = await Return.findByIdAndUpdate(req.body.returnId, { status: 'restocked' }, { new: true });
+    const ret = await Return.findOneAndUpdate(
+      { _id: req.body.returnId, customerId: req.tenantId },
+      { status: 'restocked' },
+      { new: true }
+    );
     if (!ret) return res.status(404).json({ success: false, message: 'Return not found.' });
     res.json({ success: true, data: ret, message: 'Item restocked.' });
   } catch (err) {
@@ -47,7 +52,7 @@ exports.restockItem = async (req, res, next) => {
 
 exports.getRtoOrders = async (req, res, next) => {
   try {
-    const returns = await Return.find({ rtoTracking: { $exists: true, $ne: '' } })
+    const returns = await Return.find({ customerId: req.tenantId, rtoTracking: { $exists: true, $ne: '' } })
       .populate('order')
       .populate('items.product', 'sku name')
       .sort({ createdAt: -1 })

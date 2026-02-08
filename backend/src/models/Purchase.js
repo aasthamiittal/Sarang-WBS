@@ -8,7 +8,8 @@ const purchaseItemSchema = new mongoose.Schema({
 
 const purchaseSchema = new mongoose.Schema(
   {
-    poNumber: { type: String, required: true, unique: true },
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+    poNumber: { type: String, required: true },
     supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', required: true },
     warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
     items: [purchaseItemSchema],
@@ -20,4 +21,6 @@ const purchaseSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+purchaseSchema.index({ customerId: 1, poNumber: 1 }, { unique: true });
+purchaseSchema.index({ customerId: 1 });
 module.exports = mongoose.model('Purchase', purchaseSchema);

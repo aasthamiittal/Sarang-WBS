@@ -3,12 +3,14 @@ import { Grid, MenuItem, TextField, Alert } from '@mui/material';
 import api from '../../api/axios';
 import PageHeader from '../../components/common/PageHeader';
 import FormModal from '../../components/common/FormModal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 export default function StockAdjustment() {
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState({ product: '', warehouse: '', quantity: '', reason: '' });
 
   useEffect(() => {
@@ -21,7 +23,12 @@ export default function StockAdjustment() {
     });
   }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
+    if (!formData.product || !formData.warehouse || formData.quantity === '' || formData.quantity === null) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmAdjustment = async () => {
     try {
       await api.post('/inventory/add-stock-adjustment', {
         product: formData.product,
@@ -29,6 +36,7 @@ export default function StockAdjustment() {
         quantity: Number(formData.quantity),
         reason: formData.reason || 'Manual adjustment',
       });
+      setConfirmOpen(false);
       setModalOpen(false);
       setFormData({ product: '', warehouse: '', quantity: '', reason: '' });
     } catch (err) {
@@ -62,6 +70,14 @@ export default function StockAdjustment() {
           </Grid>
         </Grid>
       </FormModal>
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Confirm Stock Adjustment"
+        message={`Apply adjustment of ${formData.quantity} for the selected product and warehouse? This will update stock immediately.`}
+        onConfirm={handleConfirmAdjustment}
+        confirmLabel="Apply"
+      />
     </>
   );
 }

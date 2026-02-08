@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
   {
-    sku: { type: String, required: true, unique: true },
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+    sku: { type: String, required: true },
     name: { type: String, required: true },
     description: String,
     category: String,
@@ -11,8 +12,12 @@ const productSchema = new mongoose.Schema(
     costPrice: Number,
     sellingPrice: Number,
     isActive: { type: Boolean, default: true },
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
+
+productSchema.index({ customerId: 1, sku: 1 }, { unique: true });
+productSchema.index({ customerId: 1, deletedAt: 1 });
 
 module.exports = mongoose.model('Product', productSchema);

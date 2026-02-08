@@ -5,9 +5,10 @@ exports.getActivityLogs = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
+    const filter = { customerId: req.tenantId };
     const [logs, total] = await Promise.all([
-      ActivityLog.find().populate('user', 'name email').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      ActivityLog.countDocuments(),
+      ActivityLog.find(filter).populate('user', 'name email').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      ActivityLog.countDocuments(filter),
     ]);
     res.json({ success: true, data: logs, total, page, totalPages: Math.ceil(total / limit) });
   } catch (err) {

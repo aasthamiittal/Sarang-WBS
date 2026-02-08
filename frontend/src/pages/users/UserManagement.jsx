@@ -7,8 +7,11 @@ import DataTable from '../../components/common/DataTable';
 import PageHeader from '../../components/common/PageHeader';
 import FormModal from '../../components/common/FormModal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { useAuth } from '../../context/AuthContext';
 
 export default function UserManagement() {
+  const { hasPermission } = useAuth();
+  const canWrite = hasPermission('users', 'write');
   const [data, setData] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,12 +80,12 @@ export default function UserManagement() {
     { id: 'email', label: 'Email' },
     { id: 'role', label: 'Role', render: (_, r) => r.role?.name || '-' },
     { id: 'isActive', label: 'Active', render: (v) => (v !== false ? 'Yes' : 'No') },
-    { id: 'actions', label: 'Actions', render: (_, row) => (<><IconButton size="small" onClick={() => handleEdit(row)}><EditIcon /></IconButton><IconButton size="small" color="error" onClick={() => handleDelete(row)}><DeleteIcon /></IconButton></>) },
+    ...(canWrite ? [{ id: 'actions', label: 'Actions', render: (_, row) => (<><IconButton size="small" onClick={() => handleEdit(row)}><EditIcon /></IconButton><IconButton size="small" color="error" onClick={() => handleDelete(row)}><DeleteIcon /></IconButton></>) }] : []),
   ];
 
   return (
     <>
-      <PageHeader title="User Management" actionLabel="Add User" onAction={handleAdd} />
+      <PageHeader title="User Management" actionLabel={canWrite ? 'Add User' : undefined} onAction={canWrite ? handleAdd : undefined} />
       {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
       <DataTable columns={columns} rows={data} loading={loading} emptyMessage="No users" />
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={selected ? 'Edit User' : 'Add User'} onSubmit={handleSubmit}>

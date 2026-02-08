@@ -1,29 +1,46 @@
 const Inventory = require('../models/Inventory');
 const StockMovement = require('../models/StockMovement');
+const InventoryLedger = require('../models/InventoryLedger');
 const Product = require('../models/Product');
 const mongoose = require('mongoose');
 
-const getOrCreateInventory = async (productId, warehouseId, binId = null) => {
-  let inv = await Inventory.findOne({ product: productId, warehouse: warehouseId });
-  if (!inv) inv = await Inventory.create({ product: productId, warehouse: warehouseId, bin: binId, quantity: 0 });
+const getOrCreateInventory = async (productId, warehouseId, customerId, binId = null) => {
+  let inv = await Inventory.findOne({ customerId, product: productId, warehouse: warehouseId });
+  if (!inv) inv = await Inventory.create({ customerId, product: productId, warehouse: warehouseId, bin: binId, quantity: 0 });
   return inv;
 };
 
 exports.addStockInward = async (req, res, next) => {
   try {
     const { product, warehouse, quantity, referenceNo, reason } = req.body;
-    const inv = await getOrCreateInventory(product, warehouse);
-    inv.quantity += Number(quantity);
+    const qty = Number(quantity);
+    if (qty <= 0) return res.status(400).json({ success: false, message: 'Inward quantity must be positive.' });
+    const inv = await getOrCreateInventory(product, warehouse, req.tenantId);
+    inv.quantity += qty;
     await inv.save();
-    await StockMovement.create({
-      product,
-      warehouse,
-      type: 'inward',
-      quantity: Number(quantity),
-      referenceNo,
-      reason,
-      createdBy: req.user?.id,
-    });
+    const createdBy = req.user?.id || req.user?.userId;
+    await Promise.all([
+      StockMovement.create({
+        customerId: req.tenantId,
+        product,
+        warehouse,
+        type: 'inward',
+        quantity: qty,
+        referenceNo,
+        reason,
+        createdBy,
+      }),
+      InventoryLedger.create({
+        customerId: req.tenantId,
+        product,
+        warehouse,
+        quantityDelta: qty,
+        type: 'inward',
+        referenceNo,
+        reason,
+        createdBy,
+      }),
+    ]);
     res.status(201).json({ success: true, data: inv, message: 'Stock inward recorded.' });
   } catch (err) {
     next(err);
@@ -33,7 +50,8 @@ exports.addStockInward = async (req, res, next) => {
 exports.getCurrentStock = async (req, res, next) => {
   try {
     const warehouse = req.query.warehouse;
-    const query = warehouse ? { warehouse } : {};
+    const query = { customerId: req.tenantId };
+    if (warehouse) query.warehouse = warehouse;
     const stock = await Inventory.find(query)
       .populate('product', 'sku name reorderLevel')
       .populate('warehouse', 'code name')
@@ -50,7 +68,7 @@ exports.getStockMovement = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    const filter = {};
+    const filter = { customerId: req.tenantId };
     if (req.query.product) filter.product = req.query.product;
     if (req.query.warehouse) filter.warehouse = req.query.warehouse;
     if (req.query.type) filter.type = req.query.type;
@@ -73,19 +91,38 @@ exports.getStockMovement = async (req, res, next) => {
 exports.addStockAdjustment = async (req, res, next) => {
   try {
     const { product, warehouse, quantity, reason } = req.body;
-    const inv = await getOrCreateInventory(product, warehouse);
+    const inv = await getOrCreateInventory(product, warehouse, req.tenantId);
     const adj = Number(quantity);
-    inv.quantity += adj;
-    if (inv.quantity < 0) inv.quantity = 0;
+    const newQty = inv.quantity + adj;
+    if (newQty < 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Negative stock not allowed. Current: ${inv.quantity}, adjustment: ${adj}.`,
+      });
+    }
+    inv.quantity = newQty;
     await inv.save();
-    await StockMovement.create({
-      product,
-      warehouse,
-      type: 'adjustment',
-      quantity: adj,
-      reason: reason || 'Manual adjustment',
-      createdBy: req.user?.id,
-    });
+    const createdBy = req.user?.id || req.user?.userId;
+    await Promise.all([
+      StockMovement.create({
+        customerId: req.tenantId,
+        product,
+        warehouse,
+        type: 'adjustment',
+        quantity: adj,
+        reason: reason || 'Manual adjustment',
+        createdBy,
+      }),
+      InventoryLedger.create({
+        customerId: req.tenantId,
+        product,
+        warehouse,
+        quantityDelta: adj,
+        type: 'adjustment',
+        reason: reason || 'Manual adjustment',
+        createdBy,
+      }),
+    ]);
     res.status(201).json({ success: true, data: inv, message: 'Stock adjusted.' });
   } catch (err) {
     next(err);
@@ -94,7 +131,7 @@ exports.addStockAdjustment = async (req, res, next) => {
 
 exports.getLowStock = async (req, res, next) => {
   try {
-    const inventories = await Inventory.find()
+    const inventories = await Inventory.find({ customerId: req.tenantId })
       .populate('product', 'sku name reorderLevel')
       .populate('warehouse', 'code name')
       .lean();

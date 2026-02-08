@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -13,6 +13,14 @@ export function AuthProvider({ children }) {
   });
   const [loading, setLoading] = useState(false);
 
+  const permissions = user?.permissions || {};
+  const isAdmin = user?.role?.name === 'Admin';
+
+  const hasPermission = useCallback(
+    (module, action) => Boolean(permissions?.[module]?.[action]),
+    [permissions]
+  );
+
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
@@ -25,7 +33,9 @@ export function AuthProvider({ children }) {
       }
       return { success: false, message: data.message || 'Login failed' };
     } catch (err) {
-      return { success: false, message: err.response?.data?.message || 'Login failed' };
+      const message = err.response?.data?.message
+        || (err.response ? `Error ${err.response.status}` : 'Cannot reach server. Is the backend running on port 5000?');
+      return { success: false, message };
     } finally {
       setLoading(false);
     }
@@ -38,7 +48,18 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        permissions,
+        isAdmin,
+        hasPermission,
+        login,
+        logout,
+        loading,
+        isAuthenticated: !!user,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

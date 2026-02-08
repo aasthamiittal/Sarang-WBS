@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import DataTable from '../../components/common/DataTable';
 import PageHeader from '../../components/common/PageHeader';
 import FormModal from '../../components/common/FormModal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 export default function Dispatch() {
   const [orders, setOrders] = useState([]);
@@ -11,6 +12,8 @@ export default function Dispatch() {
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState(null);
 
   const fetch = async () => {
     setLoading(true);
@@ -26,9 +29,18 @@ export default function Dispatch() {
 
   useEffect(() => { fetch(); }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
+    if (!orderId) return;
+    setPendingOrderId(orderId);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDispatch = async () => {
+    if (!pendingOrderId) return;
     try {
-      await api.post('/warehouses/add-dispatch', { orderId });
+      await api.post('/warehouses/add-dispatch', { orderId: pendingOrderId });
+      setConfirmOpen(false);
+      setPendingOrderId(null);
       setModalOpen(false);
       setOrderId('');
       fetch();
@@ -55,6 +67,14 @@ export default function Dispatch() {
           {orders.map((o) => <MenuItem key={o._id} value={o._id}>{o.orderNo} - {o.customerName}</MenuItem>)}
         </TextField>
       </FormModal>
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { setConfirmOpen(false); setPendingOrderId(null); }}
+        title="Confirm Dispatch"
+        message={pendingOrderId ? `Mark this order as dispatched? This action will update the order status.` : ''}
+        onConfirm={handleConfirmDispatch}
+        confirmLabel="Dispatch"
+      />
     </>
   );
 }

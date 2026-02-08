@@ -8,8 +8,11 @@ import PageHeader from '../../components/common/PageHeader';
 import FormModal from '../../components/common/FormModal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { ProductForm } from './ProductForm';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ProductList() {
+  const { hasPermission } = useAuth();
+  const canWrite = hasPermission('products', 'write');
   const [data, setData] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -107,7 +110,7 @@ export default function ProductList() {
     { id: 'reorderLevel', label: 'Reorder Level', align: 'right' },
     { id: 'costPrice', label: 'Cost', align: 'right', render: (v) => (v != null ? Number(v).toFixed(2) : '-') },
     { id: 'sellingPrice', label: 'Selling', align: 'right', render: (v) => (v != null ? Number(v).toFixed(2) : '-') },
-    {
+    ...(canWrite ? [{
       id: 'actions',
       label: 'Actions',
       render: (_, row) => (
@@ -116,12 +119,12 @@ export default function ProductList() {
           <IconButton size="small" color="error" onClick={() => handleDelete(row)}><DeleteIcon /></IconButton>
         </Box>
       ),
-    },
+    }] : []),
   ];
 
   return (
     <>
-      <PageHeader title="Product / SKU Master" actionLabel="Add Product" onAction={handleAdd} />
+      <PageHeader title="Product / SKU Master" actionLabel={canWrite ? 'Add Product' : undefined} onAction={canWrite ? handleAdd : undefined} />
       {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
       <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
         <TextField
